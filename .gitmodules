@@ -1,4 +1,0 @@
-[submodule "boards"]
-	path = boards
-	url = https://github.com/JoDaNl/platformio-espressif32-sunton.git#Branch_2.0.9_JC3248W535-JJ
-	update = merge
