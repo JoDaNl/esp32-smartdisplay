@@ -90,6 +90,8 @@ static void lvgl_port_touchpad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *
 * Public API functions
 *******************************************************************************/
 
+#ifdef BLABLA
+
 esp_err_t lvgl_port_init(const lvgl_port_cfg_t *cfg)
 {
     esp_err_t ret = ESP_OK;
@@ -130,6 +132,8 @@ err:
 
     return ret;
 }
+
+
 
 esp_err_t lvgl_port_resume(void)
 {
@@ -173,6 +177,8 @@ esp_err_t lvgl_port_deinit(void)
 
     return ESP_OK;
 }
+
+#endif
 
 lv_disp_t *lvgl_port_add_disp(const lvgl_port_display_cfg_t *disp_cfg)
 {
@@ -277,6 +283,7 @@ err:
     return disp;
 }
 
+#ifdef BLABLA
 esp_err_t lvgl_port_remove_disp(lv_disp_t *disp)
 {
     assert(disp);
@@ -305,6 +312,7 @@ esp_err_t lvgl_port_remove_disp(lv_disp_t *disp)
 
     return ESP_OK;
 }
+#endif
 
 #ifdef ESP_LVGL_PORT_TOUCH_COMPONENT
 lv_indev_t *lvgl_port_add_touch(const lvgl_port_touch_cfg_t *touch_cfg)
@@ -349,6 +357,7 @@ esp_err_t lvgl_port_remove_touch(lv_indev_t *touch)
 }
 #endif
 
+#ifdef BLABLA
 bool lvgl_port_lock(uint32_t timeout_ms)
 {
     assert(lvgl_port_ctx.lvgl_mux && "lvgl_port_init must be called first");
@@ -369,10 +378,13 @@ void lvgl_port_flush_ready(lv_disp_t *disp)
     assert(disp->driver);
     lv_disp_flush_ready(disp->driver);
 }
+#endif
+
 
 /*******************************************************************************
 * Private functions
 *******************************************************************************/
+#ifdef BLABLA
 
 static void lvgl_port_task(void *arg)
 {
@@ -410,6 +422,9 @@ static void lvgl_port_task_deinit(void)
     lv_deinit();
 #endif
 }
+
+#endif  // BLABLA
+
 
 #if LVGL_PORT_HANDLE_FLUSH_READY
 static bool lvgl_port_flush_ready_callback(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx)

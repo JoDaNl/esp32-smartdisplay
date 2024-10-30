@@ -200,6 +200,7 @@ static bool bsp_display_sync_cb(void *arg)
     return true;
 }
 
+#ifdef BLABLA
 static void bsp_display_sync_task(void *arg)
 {
     assert(arg);
@@ -212,7 +213,9 @@ static void bsp_display_sync_task(void *arg)
     }
     vTaskDelete(NULL);
 }
+#endif
 
+#ifdef BLABLA
 static void bsp_display_tear_interrupt(void *arg)
 {
     assert(arg);
@@ -230,15 +233,16 @@ static void bsp_display_tear_interrupt(void *arg)
         }
     }
 }
+#endif
 
 esp_err_t bsp_display_new(const bsp_display_config_t *config, esp_lcd_panel_handle_t *ret_panel, esp_lcd_panel_io_handle_t *ret_io)
 {
     esp_err_t ret = ESP_OK;
     assert(config != NULL && config->max_transfer_sz > 0);
 
-    SemaphoreHandle_t te_catch_sem = NULL;
-    SemaphoreHandle_t te_v_sync_sem = NULL;
-    bsp_lcd_tear_t *tear_ctx = NULL;
+    // SemaphoreHandle_t te_catch_sem = NULL;
+    // SemaphoreHandle_t te_v_sync_sem = NULL;
+    // bsp_lcd_tear_t *tear_ctx = NULL;
 
     ESP_LOGI(TAG, "Initialize SPI bus");
     const spi_bus_config_t buscfg = AXS15231B_PANEL_BUS_QSPI_CONFIG(
@@ -275,6 +279,7 @@ esp_err_t bsp_display_new(const bsp_display_config_t *config, esp_lcd_panel_hand
     esp_lcd_panel_init(*ret_panel);
     esp_lcd_panel_disp_on_off(*ret_panel, false);
 
+#ifdef BLABLA
     if (config->tear_cfg.te_gpio_num > 0) {
 
         tear_ctx = malloc(sizeof(bsp_lcd_tear_t));
@@ -316,27 +321,29 @@ esp_err_t bsp_display_new(const bsp_display_config_t *config, esp_lcd_panel_hand
     }
 
     (*ret_panel)->user_data = (void *)tear_ctx;
+#endif
+    (*ret_panel)->user_data = NULL;
 
     return ret;
 
-err:
-    if (te_v_sync_sem) {
-        vSemaphoreDelete(te_v_sync_sem);
-    }
-    if (te_catch_sem) {
-        vSemaphoreDelete(te_catch_sem);
-    }
-    if (tear_ctx) {
-        free(tear_ctx);
-    }
-    if (*ret_panel) {
-        esp_lcd_panel_del(*ret_panel);
-    }
-    if (*ret_io) {
-        esp_lcd_panel_io_del(*ret_io);
-    }
-    spi_bus_free(EXAMPLE_LCD_QSPI_HOST);
-    return ret;
+// err:
+//     if (te_v_sync_sem) {
+//         vSemaphoreDelete(te_v_sync_sem);
+//     }
+//     if (te_catch_sem) {
+//         vSemaphoreDelete(te_catch_sem);
+//     }
+//     if (tear_ctx) {
+//         free(tear_ctx);
+//     }
+//     if (*ret_panel) {
+//         esp_lcd_panel_del(*ret_panel);
+//     }
+//     if (*ret_io) {
+//         esp_lcd_panel_io_del(*ret_io);
+//     }
+//     spi_bus_free(EXAMPLE_LCD_QSPI_HOST);
+//     return ret;
 }
 
 lv_disp_t *bsp_display_lcd_init(const bsp_display_cfg_t *cfg)
@@ -528,7 +535,7 @@ static lv_indev_t *bsp_display_indev_init(const bsp_display_cfg_t *config, lv_di
 
 lv_disp_t *bsp_display_start_with_config(const bsp_display_cfg_t *cfg)
 {
-    BSP_ERROR_CHECK_RETURN_NULL(lvgl_port_init(&cfg->lvgl_port_cfg));
+//    BSP_ERROR_CHECK_RETURN_NULL(lvgl_port_init(&cfg->lvgl_port_cfg));
 
 //     BSP_ERROR_CHECK_RETURN_NULL(bsp_display_brightness_init());
 
@@ -571,11 +578,29 @@ void bsp_display_unlock(void)
 #define LVGL_PORT_ROTATION_DEGREE               (270)
 
 
+
+static void axs15231b_lv_flush(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
+{
+    esp_lcd_panel_handle_t panel_handle = drv->user_data;
+#if LV_COLOR_16_SWAP != 1
+#warning "LV_COLOR_16_SWAP should be 1 for max performance"
+    ushort pixels = lv_area_get_size(area);
+    lv_color16_t *p = color_map;
+    while (pixels--)
+        p++->full = (uint16_t)((p->full >> 8) | (p->full << 8));
+#endif
+    ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, color_map));
+};
+
+
+
 void lvgl_lcd_init(lv_disp_drv_t *drv)
 {
     log_v("drv:0x%08x");
 
-    bsp_display_cfg_t cfg = {
+#ifdef BLABLA
+    bsp_display_cfg_t cfg = 
+    {
         .lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG(),
         .buffer_size = EXAMPLE_LCD_QSPI_H_RES * EXAMPLE_LCD_QSPI_V_RES,
 #if LVGL_PORT_ROTATION_DEGREE == 90
@@ -588,10 +613,69 @@ void lvgl_lcd_init(lv_disp_drv_t *drv)
         .rotate = LV_DISP_ROT_NONE,
 #endif
     };
+#endif
 
-    static lv_disp_t * p;  
-    p = bsp_display_start_with_config(&cfg);
-   
+    // bsp_display_start_with_config(&cfg);
+    // disp = bsp_display_lcd_init(&cfg);
+
+    // Hardware rotation is supported
+    drv->sw_rotate = 0;
+    drv->rotated = LV_DISP_ROT_NONE;
+
+    uint32_t max_transfer_sz = EXAMPLE_LCD_QSPI_H_RES * EXAMPLE_LCD_QSPI_V_RES * sizeof(uint16_t);
+
+    // Create SPI bus
+    ESP_LOGI(TAG, "Initialize SPI bus");
+    const spi_bus_config_t buscfg = AXS15231B_PANEL_BUS_QSPI_CONFIG(
+                                        EXAMPLE_PIN_NUM_QSPI_PCLK,
+                                        EXAMPLE_PIN_NUM_QSPI_DATA0,
+                                        EXAMPLE_PIN_NUM_QSPI_DATA1,
+                                        EXAMPLE_PIN_NUM_QSPI_DATA2,
+                                        EXAMPLE_PIN_NUM_QSPI_DATA3,
+                                        max_transfer_sz);
+    ESP_ERROR_CHECK(spi_bus_initialize(EXAMPLE_LCD_QSPI_HOST, &buscfg, SPI_DMA_CH_AUTO));
+
+    ESP_LOGI(TAG, "Install panel IO");
+    
+    // Attach the LCD controller to the SPI bus
+    const esp_lcd_panel_io_spi_config_t io_spi_config = AXS15231B_PANEL_IO_QSPI_CONFIG(EXAMPLE_PIN_NUM_QSPI_CS, NULL, NULL);
+    
+    // Attach the LCD to the SPI bus
+    esp_lcd_panel_io_handle_t io_handle;    
+    ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)EXAMPLE_LCD_QSPI_HOST, &io_spi_config, &io_handle));
+
+    ESP_LOGI(TAG, "Install LCD driver of axs15231b");
+
+    const axs15231b_vendor_config_t vendor_config = 
+    {
+        .init_cmds = lcd_init_cmds,         // Uncomment these line if use custom initialization commands
+        .init_cmds_size = sizeof(lcd_init_cmds) / sizeof(lcd_init_cmds[0]),
+        .flags = 
+        {
+            .use_qspi_interface = 1,
+        },
+    };
+
+    const esp_lcd_panel_dev_config_t panel_dev_config = 
+    {
+        .reset_gpio_num = EXAMPLE_PIN_NUM_QSPI_RST,
+        .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,
+        .bits_per_pixel = BSP_LCD_BITS_PER_PIXEL,
+        .vendor_config = (void *) &vendor_config,
+    };
+
+    esp_lcd_panel_handle_t panel_handle;
+
+
+    ESP_ERROR_CHECK(esp_lcd_new_panel_axs15231b(io_handle, &panel_dev_config, &panel_handle));
+
+    esp_lcd_panel_reset(panel_handle);
+    esp_lcd_panel_init(panel_handle);
+    esp_lcd_panel_disp_on_off(panel_handle, false);
+
+
+    drv->user_data = panel_handle;
+    drv->flush_cb = axs15231b_lv_flush;
 
 }
 
