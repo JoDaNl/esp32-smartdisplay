@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: CC0-1.0
  */
 
+#ifdef DISPLAY_AXS15231B
+
+#include <esp32_smartdisplay.h>
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -22,14 +25,15 @@
 #include "esp_log.h"
 #include "lvgl.h"
 #include "esp_rom_gpio.h"
-#include "esp_lcd_axs15231b.h"
+#include "esp_panel_axs15231b.h"
 #include "bsp_err_check.h"
 
 #include "lv_port.h"
 #include "display.h"
-#include "esp_bsp.h"
+#include "esp_panel_axs15231b.h"
+#include "lvgl_panel_axs15231b.h"
 
-static const char *TAG = "example";
+static const char *TAG = "AXS15231B";
 
 static const axs15231b_lcd_init_cmd_t lcd_init_cmds[] = {
     {0xBB, (uint8_t []){0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5A, 0xA5}, 8, 0},
@@ -81,8 +85,11 @@ typedef struct {
 
 static lv_disp_t *disp;
 static lv_indev_t *disp_indev = NULL;
-static esp_lcd_touch_handle_t tp = NULL;   // LCD touch handle
 static esp_lcd_panel_handle_t panel_handle = NULL;
+
+#ifdef BOARD_HAS_TOUCH
+static esp_lcd_touch_handle_t tp = NULL;   // LCD touch handle
+#endif 
 
 static bool i2c_initialized = false;
 
@@ -115,6 +122,9 @@ esp_err_t bsp_i2c_deinit(void)
     i2c_initialized = false;
     return ESP_OK;
 }
+
+
+#ifdef BLABLA  // FIXME
 
 // Bit number used to represent command and parameter
 #define LCD_LEDC_CH            1
@@ -171,6 +181,8 @@ esp_err_t bsp_display_backlight_on(void)
 {
     return bsp_display_brightness_set(100);
 }
+
+#endif // BLABLA
 
 static bool bsp_display_sync_cb(void *arg)
 {
@@ -327,7 +339,7 @@ err:
     return ret;
 }
 
-static lv_disp_t *bsp_display_lcd_init(const bsp_display_cfg_t *cfg)
+lv_disp_t *bsp_display_lcd_init(const bsp_display_cfg_t *cfg)
 {
     assert(cfg != NULL);
     esp_lcd_panel_io_handle_t io_handle = NULL;
@@ -374,6 +386,8 @@ static lv_disp_t *bsp_display_lcd_init(const bsp_display_cfg_t *cfg)
 
     return lvgl_port_add_disp(&disp_cfg);
 }
+
+#ifdef BOARD_HAS_TOUCH
 
 static bool bsp_touch_sync_cb(void *arg)
 {
@@ -510,15 +524,17 @@ static lv_indev_t *bsp_display_indev_init(const bsp_display_cfg_t *config, lv_di
     return lvgl_port_add_touch(&touch_cfg);
 }
 
+#endif //  BOARD_HAS_TOUCH
+
 lv_disp_t *bsp_display_start_with_config(const bsp_display_cfg_t *cfg)
 {
     BSP_ERROR_CHECK_RETURN_NULL(lvgl_port_init(&cfg->lvgl_port_cfg));
 
-    BSP_ERROR_CHECK_RETURN_NULL(bsp_display_brightness_init());
+//     BSP_ERROR_CHECK_RETURN_NULL(bsp_display_brightness_init());
 
     BSP_NULL_CHECK(disp = bsp_display_lcd_init(cfg), NULL);
 
-    BSP_NULL_CHECK(disp_indev = bsp_display_indev_init(cfg, disp), NULL);
+//    BSP_NULL_CHECK(disp_indev = bsp_display_indev_init(cfg, disp), NULL);
 
     return disp;
 }
@@ -537,3 +553,47 @@ void bsp_display_unlock(void)
 {
     lvgl_port_unlock();
 }
+
+
+
+
+// wrapper functions for esp32_smartdisplay lib
+
+/**
+ * Set the rotation degree:
+ *      - 0: 0 degree
+ *      - 90: 90 degree
+ *      - 180: 180 degree
+ *      - 270: 270 degree
+ *
+ */
+
+#define LVGL_PORT_ROTATION_DEGREE               (270)
+
+
+void lvgl_lcd_init(lv_disp_drv_t *drv)
+{
+    log_v("drv:0x%08x");
+
+    bsp_display_cfg_t cfg = {
+        .lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG(),
+        .buffer_size = EXAMPLE_LCD_QSPI_H_RES * EXAMPLE_LCD_QSPI_V_RES,
+#if LVGL_PORT_ROTATION_DEGREE == 90
+        .rotate = LV_DISP_ROT_90,
+#elif LVGL_PORT_ROTATION_DEGREE == 270
+        .rotate = LV_DISP_ROT_270,
+#elif LVGL_PORT_ROTATION_DEGREE == 180
+        .rotate = LV_DISP_ROT_180,
+#elif LVGL_PORT_ROTATION_DEGREE == 0
+        .rotate = LV_DISP_ROT_NONE,
+#endif
+    };
+
+    static lv_disp_t * p;  
+    p = bsp_display_start_with_config(&cfg);
+   
+
+}
+
+
+#endif // DISPLAY_AXS15231B_SPI

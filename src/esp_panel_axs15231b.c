@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef DISPLAY_AXS15231B_SPI
+#ifdef DISPLAY_AXS15231B
 
 #include <stdlib.h>
 #include <sys/cdefs.h>
@@ -20,7 +20,7 @@
 #include "esp_check.h"
 #include "esp_lcd_touch.h"
 
-#include "esp_lcd_axs15231b.h"
+#include "esp_panel_axs15231b.h"
 
 /*max point num*/
 #define AXS_MAX_TOUCH_NUMBER                (1)

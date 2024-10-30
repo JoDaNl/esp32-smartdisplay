@@ -100,9 +100,12 @@ esp_err_t lvgl_port_init(const lvgl_port_cfg_t *cfg)
 
     /* LVGL init */
     lv_init();
+
+#ifdef BLABLA
     /* Tick init */
     lvgl_port_timer_period_ms = cfg->timer_period_ms;
     ESP_RETURN_ON_ERROR(lvgl_port_tick_init(), TAG, "");
+    
     /* Create task */
     lvgl_port_ctx.task_max_sleep_ms = cfg->task_max_sleep_ms;
     if (lvgl_port_ctx.task_max_sleep_ms == 0) {
@@ -118,6 +121,7 @@ esp_err_t lvgl_port_init(const lvgl_port_cfg_t *cfg)
         res = xTaskCreatePinnedToCore(lvgl_port_task, "LVGL task", cfg->task_stack, NULL, cfg->task_priority, NULL, cfg->task_affinity);
     }
     ESP_GOTO_ON_FALSE(res == pdPASS, ESP_FAIL, err, TAG, "Create LVGL task fail!");
+#endif
 
 err:
     if (ret != ESP_OK) {
@@ -604,6 +608,7 @@ static void lvgl_port_touchpad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *
 }
 #endif
 
+#ifdef BLABLA
 static void lvgl_port_tick_increment(void *arg)
 {
     /* Tell LVGL how many milliseconds have elapsed */
@@ -620,3 +625,5 @@ static esp_err_t lvgl_port_tick_init(void)
     ESP_RETURN_ON_ERROR(esp_timer_create(&lvgl_tick_timer_args, &lvgl_port_ctx.tick_timer), TAG, "Creating LVGL timer filed!");
     return esp_timer_start_periodic(lvgl_port_ctx.tick_timer, lvgl_port_timer_period_ms * 1000);
 }
+
+#endif
