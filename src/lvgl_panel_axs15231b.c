@@ -7,9 +7,9 @@
 #ifdef DISPLAY_AXS15231B
 
 #include <esp32_smartdisplay.h>
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+// #include <stdio.h>
+// #include "freertos/FreeRTOS.h"
+// #include "freertos/task.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "driver/spi_master.h"
@@ -28,7 +28,7 @@
 #include "esp_panel_axs15231b.h"
 #include "bsp_err_check.h"
 
-#include "lv_port.h"
+// #include "lv_port.h"
 #include "display.h"
 #include "esp_panel_axs15231b.h"
 #include "lvgl_panel_axs15231b.h"
@@ -85,7 +85,7 @@ typedef struct {
 
 static lv_disp_t *disp;
 static lv_indev_t *disp_indev = NULL;
-static esp_lcd_panel_handle_t panel_handle = NULL;
+// static esp_lcd_panel_handle_t panel_handle = NULL;
 
 #ifdef BOARD_HAS_TOUCH
 static esp_lcd_touch_handle_t tp = NULL;   // LCD touch handle
@@ -346,6 +346,7 @@ esp_err_t bsp_display_new(const bsp_display_config_t *config, esp_lcd_panel_hand
 //     return ret;
 }
 
+#ifdef BLABLA
 lv_disp_t *bsp_display_lcd_init(const bsp_display_cfg_t *cfg)
 {
     assert(cfg != NULL);
@@ -393,6 +394,7 @@ lv_disp_t *bsp_display_lcd_init(const bsp_display_cfg_t *cfg)
 
     return lvgl_port_add_disp(&disp_cfg);
 }
+#endif
 
 #ifdef BOARD_HAS_TOUCH
 
@@ -516,6 +518,7 @@ err:
     return ret;
 }
 
+#ifdef BLABLA
 static lv_indev_t *bsp_display_indev_init(const bsp_display_cfg_t *config, lv_disp_t *disp)
 {
     BSP_ERROR_CHECK_RETURN_NULL(bsp_touch_new(config, &tp));
@@ -530,9 +533,11 @@ static lv_indev_t *bsp_display_indev_init(const bsp_display_cfg_t *config, lv_di
 
     return lvgl_port_add_touch(&touch_cfg);
 }
+#endif // BLABLA
 
 #endif //  BOARD_HAS_TOUCH
 
+#ifdef BLABLA
 lv_disp_t *bsp_display_start_with_config(const bsp_display_cfg_t *cfg)
 {
 //    BSP_ERROR_CHECK_RETURN_NULL(lvgl_port_init(&cfg->lvgl_port_cfg));
@@ -545,12 +550,14 @@ lv_disp_t *bsp_display_start_with_config(const bsp_display_cfg_t *cfg)
 
     return disp;
 }
+#endif
 
 lv_indev_t *bsp_display_get_input_dev(void)
 {
     return disp_indev;
 }
 
+#ifdef BLABLA
 bool bsp_display_lock(uint32_t timeout_ms)
 {
     return lvgl_port_lock(timeout_ms);
@@ -560,7 +567,7 @@ void bsp_display_unlock(void)
 {
     lvgl_port_unlock();
 }
-
+#endif
 
 
 
@@ -672,7 +679,6 @@ void lvgl_lcd_init(lv_disp_drv_t *drv)
     esp_lcd_panel_reset(panel_handle);
     esp_lcd_panel_init(panel_handle);
     esp_lcd_panel_disp_on_off(panel_handle, false);
-
 
     drv->user_data = panel_handle;
     drv->flush_cb = axs15231b_lv_flush;

@@ -16,7 +16,7 @@
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "lvgl.h"
-#include "lv_port.h"
+// #include "lv_port.h"
 
 /**************************************************************************************************
  *  pinout
@@ -53,11 +53,13 @@ extern "C" {
  * @brief BSP display configuration structure
  *
  */
+#ifdef BLABLA
 typedef struct {
     lvgl_port_cfg_t lvgl_port_cfg;  /*!< Configuration for the LVGL port */
     uint32_t buffer_size;           /*!< Size of the buffer for the screen in pixels */
     lv_disp_rot_t rotate;           /*!< Rotation configuration for the display */
 } bsp_display_cfg_t;
+#endif // BLABLA
 
 /**
  * @brief Init I2C driver
@@ -90,8 +92,9 @@ esp_err_t bsp_i2c_deinit(void);
  *
  * @return Pointer to LVGL display or NULL when error occurred
  */
+#ifdef BLABLA
 lv_disp_t *bsp_display_start_with_config(const bsp_display_cfg_t *cfg);
-
+#endif
 /**
  * @brief Get pointer to input device (touch, buttons, ...)
  *
